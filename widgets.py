@@ -7,7 +7,7 @@ class FileBrowseWidget(QtGui.QWidget):
     '''
     Creates a widget that contains a label and a file browser
     '''
-    def __init__(self, labelName):
+    def __init__(self, labelName, fileName, outfile):
         '''
         Creates the elements of the widget.
         :param labelName: Name of the label
@@ -18,10 +18,10 @@ class FileBrowseWidget(QtGui.QWidget):
         hLayout = QtGui.QHBoxLayout()
         fileLabel = QtGui.QLabel(labelName)
         hLayout.addWidget(fileLabel)
-        self.fileEdit = QtGui.QLineEdit("Select %s" % labelName)
+        self.fileEdit = QtGui.QLineEdit(fileName)
         self.fileEdit.setReadOnly(True)
         self.fileEdit.setToolTip('Click to select a file')
-        self.saveFilePath = QtCore.QDir.currentPath()
+        self.saveFilePath = outfile
         hLayout.addWidget(self.fileEdit)
         self.layout.addLayout(hLayout,1,0)
 
@@ -39,7 +39,7 @@ class FileBrowseWidget(QtGui.QWidget):
         '''
         dialog = QtGui.QFileDialog()
         filename, fileType = dialog.getOpenFileName(self, "Select File",
-            QtCore.QDir.currentPath(), options= QtGui.QFileDialog.DontUseNativeDialog)
+            os.path.dirname(self.fileEdit.text()), options= QtGui.QFileDialog.DontUseNativeDialog)
         self.fileEdit.setText(str(filename))
 
     def saveFileDialog(self, event):
@@ -65,6 +65,5 @@ class FileBrowseWidget(QtGui.QWidget):
         '''
         filename = str(filename)
         newFilename = filename.split('/')[-1].split('.')[0]
-        newFilePath = '%s/%s.mov' % (os.path.dirname(filename), newFilename)
+        newFilePath = '%s/%s.mov' % (os.path.dirname(self.saveFilePath), newFilename)
         self.fileEdit.setText(newFilePath)
-        self.saveFilePath = newFilePath

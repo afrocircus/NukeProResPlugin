@@ -6,6 +6,7 @@ import os
 import re
 import nuke
 import utils
+import ftrackUtils
 import PySide.QtCore as QtCore
 import PySide.QtGui as QtGui
 from widgets import FileBrowseWidget
@@ -18,9 +19,11 @@ class NukeProResWindow(QtGui.QWidget):
         self.setMinimumSize(320,200)
         viewerBox = QtGui.QGroupBox('File Options')
         vLayout = QtGui.QVBoxLayout()
-        self.inputWidget = FileBrowseWidget("Input Image File  ")
+        basedir, infile = ftrackUtils.getInputFilePath(os.environ['FTRACK_SHOTID'])
+        outfile = ftrackUtils.getOutputFilePath(basedir, infile)
+        self.inputWidget = FileBrowseWidget("Input Image File  ", infile, outfile)
         self.inputWidget.addOpenFileDialogEvent()
-        self.outputWidget = FileBrowseWidget("Output Movie File")
+        self.outputWidget = FileBrowseWidget("Output Movie File", outfile, outfile)
         self.outputWidget.addSaveFileDialogEvent()
         # Set trigger to change output path when input file is selected.
         self.inputWidget.fileEdit.textChanged.connect(self.outputWidget.setFilePath)
