@@ -7,7 +7,6 @@ import re
 import nuke
 import utils
 import ftrackUtils
-import PySide.QtCore as QtCore
 import PySide.QtGui as QtGui
 from widgets import FileBrowseWidget
 
@@ -18,6 +17,7 @@ class NukeProResWindow(QtGui.QWidget):
         self.setLayout(QtGui.QGridLayout())
         self.setMinimumSize(320,200)
         viewerBox = QtGui.QGroupBox('File Options')
+        viewerBox.setMaximumSize(500, 150)
         vLayout = QtGui.QVBoxLayout()
         basedir, infile = ftrackUtils.getInputFilePath(os.environ['FTRACK_SHOTID'])
         outfile = ftrackUtils.getOutputFilePath(basedir, infile)
@@ -52,9 +52,12 @@ class NukeProResWindow(QtGui.QWidget):
         hslugLayout.addWidget(self.slugTextBox,0,1)
         self.slugFrameBox.setVisible(False)
 
+        hLayout2 = QtGui.QHBoxLayout()
         createButton = QtGui.QPushButton('Create Movie')
         createButton.clicked.connect(self.createMovie)
-        self.layout().addWidget(createButton,2,0)
+        hLayout2.addWidget(createButton)
+        hLayout2.addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum))
+        self.layout().addLayout(hLayout2, 2, 0)
         self.layout().addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding), 3, 0)
 
     def showSlugOptions(self, state):

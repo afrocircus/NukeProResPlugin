@@ -1,6 +1,5 @@
 __author__ = 'Natasha'
 import os
-import PySide.QtCore as QtCore
 import PySide.QtGui as QtGui
 
 class FileBrowseWidget(QtGui.QWidget):
