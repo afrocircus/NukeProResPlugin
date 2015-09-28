@@ -35,3 +35,47 @@ def getOutputFilePath(baseDir, inputFile):
     outputFile = os.path.join(movDir, filename.split('.')[0])
     outputFile = '%s.mov' % outputFile
     return outputFile
+
+def getAllProjectNames():
+    projects = ftrack.getProjects()
+    projList = [proj.getName() for proj in projects]
+    projList.sort()
+    return projList
+
+def getProject(projName):
+    for project in ftrack.getProjects():
+        if project.getName() == projName:
+            break;
+    return project
+
+def getNode(nodePath):
+    nodes = nodePath.split(' / ')
+    parent = getProject(nodes[0])
+    nodes = nodes[1:]
+    if nodes:
+        for node in nodes:
+            for child in parent.getChildren():
+                if child.getName() == node:
+                    parent = child
+                    break
+    return parent
+
+def getAllChildren(projPath):
+    parent = getNode(projPath)
+    children = parent.getChildren()
+    complete = False
+    if not children:
+        children = parent.getTasks()
+    childList = []
+    for child in children:
+        if child.getName() == 'Asset builds' or child.get('objecttypename') == 'Asset Build':
+            childList.append(('assetbuild', child.getName()))
+        elif child.get('objecttypename') == 'Episode':
+            childList.append(('episode', child.getName()))
+        elif child.get('objecttypename') == 'Sequence':
+            childList.append(('sequence', child.getName()))
+        elif child.get('objecttypename') == 'Shot':
+            childList.append(('shot', child.getName()))
+        else:
+            childList.append(('task', child.getName()))
+    return childList
