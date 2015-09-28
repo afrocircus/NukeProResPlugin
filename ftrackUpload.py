@@ -140,6 +140,7 @@ class MovieUploadWidget(QtGui.QWidget):
         hlayout = QtGui.QHBoxLayout()
         self.assetDrop = QtGui.QComboBox()
         self.assetDrop.addItem('new')
+        self.assetDrop.setMinimumWidth(100)
         hlayout.addWidget(self.assetDrop)
         hlayout.addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum))
         gLayout.addLayout(hlayout, 1, 1)
@@ -157,6 +158,8 @@ class MovieUploadWidget(QtGui.QWidget):
 
     def setPath(self, newPath):
         self.taskEdit.setText(newPath)
+        assetList = ftrackUtils.getAllAssets(newPath)
+        self.assetDrop.addItems(assetList)
 
     def openBrowserDialog(self):
         taskpath = str(self.taskEdit.text())

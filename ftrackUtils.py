@@ -79,3 +79,9 @@ def getAllChildren(projPath):
         else:
             childList.append(('task', child.getName()))
     return childList
+
+def getAllAssets(projPath):
+    parent = getNode(projPath)
+    assets = parent.getAssets()
+    assetList = [asset.getName() for asset in assets]
+    return assetList
