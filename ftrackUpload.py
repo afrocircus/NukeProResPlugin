@@ -1,12 +1,12 @@
 __author__ = 'natasha'
 
-import sys
 import PySide.QtGui as QtGui
 import ftrackUtils
 from PySide.QtCore import Signal
-import os
-os.environ['USERNAME'] = 'Natasha'
+# import os, sys
+# os.environ['USERNAME'] = 'Natasha'
 
+iconPath = 'P:\\dev\\ftrack-connect-package\\resource\\ftrack_connect_nuke\\nuke_path\\NukeProResPlugin'
 
 class BrowserDialog(QtGui.QDialog):
 
@@ -49,11 +49,10 @@ class BrowserDialog(QtGui.QDialog):
             self.createTaskList(self.taskPath)
             self.setProjPath()
 
-
     def createProjList(self, projList):
         projects = ftrackUtils.getAllProjectNames()
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("PNG/home.png"))
+        icon.addPixmap(QtGui.QPixmap("%s\\PNG\\home.png" % iconPath))
         for project in projects:
             item = QtGui.QListWidgetItem(icon, project)
             projList.addItem(item)
@@ -95,15 +94,15 @@ class BrowserDialog(QtGui.QDialog):
         for type, name in self.childList:
             if type == 'assetbuild':
                 icon = QtGui.QIcon()
-                icon.addPixmap(QtGui.QPixmap("PNG/box.png"))
+                icon.addPixmap(QtGui.QPixmap("%s\\PNG\\box.png" % iconPath))
                 item = QtGui.QListWidgetItem(icon, name)
             elif type == 'task':
                 icon = QtGui.QIcon()
-                icon.addPixmap(QtGui.QPixmap("PNG/signup.png"))
+                icon.addPixmap(QtGui.QPixmap("%s\\PNG\\signup.png" % iconPath))
                 item = QtGui.QListWidgetItem(icon, name)
             elif type == 'sequence':
                 icon = QtGui.QIcon()
-                icon.addPixmap(QtGui.QPixmap("PNG/movie.png"))
+                icon.addPixmap(QtGui.QPixmap("%s\\PNG\\movie.png" % iconPath))
                 item = QtGui.QListWidgetItem(icon, name)
             else:
                 item = QtGui.QListWidgetItem(name)
@@ -124,42 +123,81 @@ class MovieUploadWidget(QtGui.QWidget):
     def __init__(self, parent=None):
         QtGui.QWidget.__init__(self, parent)
         self.setLayout(QtGui.QGridLayout())
-        viewerBox = QtGui.QGroupBox('File Options')
-        viewerBox.setMaximumSize(500,200)
-        gLayout = QtGui.QGridLayout()
-        viewerBox.setLayout(gLayout)
-        self.layout().addWidget(viewerBox)
-        gLayout.addWidget(QtGui.QLabel('Link To:'))
+        self.layout().addWidget(QtGui.QLabel('Link To:'))
         self.taskEdit = QtGui.QLineEdit()
-        gLayout.addWidget(self.taskEdit, 0, 1)
+        self.taskEdit.setReadOnly(True)
+        self.layout().addWidget(self.taskEdit, 0, 1)
+        self.taskEdit.textChanged.connect(self.updateAssetDrop)
         self.browseButton = QtGui.QPushButton('Browse')
         self.browseButton.clicked.connect(self.openBrowserDialog)
-        gLayout.addWidget(self.browseButton, 0, 2)
+        self.layout().addWidget(self.browseButton, 0, 2)
 
-        gLayout.addWidget(QtGui.QLabel('Assets:'), 1, 0)
+        self.layout().addWidget(QtGui.QLabel('Assets:'), 1, 0)
         hlayout = QtGui.QHBoxLayout()
         self.assetDrop = QtGui.QComboBox()
+        self.assetDrop.addItem('Select')
         self.assetDrop.addItem('new')
         self.assetDrop.setMinimumWidth(100)
+        self.assetDrop.activated[str].connect(self.assetSelected)
         hlayout.addWidget(self.assetDrop)
         hlayout.addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum))
-        gLayout.addLayout(hlayout, 1, 1)
+        self.layout().addLayout(hlayout, 1, 1)
 
-        gLayout.addWidget(QtGui.QLabel('Asset Name:'), 2, 0)
+        self.layout().addWidget(QtGui.QLabel('Asset Name:'), 2, 0)
         self.assetEdit = QtGui.QLineEdit()
-        gLayout.addWidget(self.assetEdit)
+        self.assetEdit.setDisabled(True)
+        self.layout().addWidget(self.assetEdit)
 
         vLayout = QtGui.QVBoxLayout()
         vLayout.addWidget(QtGui.QLabel('Comment'))
         vLayout.addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding))
-        gLayout.addLayout(vLayout, 3, 0)
+        self.layout().addLayout(vLayout, 3, 0)
         self.commentBox = QtGui.QTextEdit()
-        gLayout.addWidget(self.commentBox, 3, 1)
+        self.layout().addWidget(self.commentBox, 3, 1)
+
+        self.layout().addWidget(QtGui.QLabel('Status:'), 4, 0)
+        hlayout1 = QtGui.QHBoxLayout()
+        self.statusDrop = QtGui.QComboBox()
+        self.statusDrop.setMinimumWidth(100)
+        hlayout1.addWidget(self.statusDrop)
+        hlayout1.addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum))
+        self.layout().addLayout(hlayout1, 4, 1)
+
+        self.uploadButton = QtGui.QPushButton('Upload')
+        self.uploadButton.setDisabled(True)
+        self.layout().addWidget(self.uploadButton, 5, 0)
+        self.layout().addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding), 6, 0)
 
     def setPath(self, newPath):
         self.taskEdit.setText(newPath)
+
+    def assetSelected(self, assetName):
+        if assetName == 'Select':
+            self.assetEdit.setDisabled(True)
+            self.uploadButton.setEnabled(False)
+        elif assetName == 'new' :
+            self.assetEdit.setDisabled(False)
+            self.assetEdit.textChanged.connect(self.enableUploadButton)
+        else:
+            self.assetEdit.setDisabled(True)
+            self.enableUploadButton()
+
+    def updateAssetDrop(self):
+        newPath = str(self.taskEdit.text())
+        self.assetDrop.clear()
+        self.assetDrop.addItem('Select')
+        self.assetDrop.addItem('new')
+        self.assetEdit.setDisabled(False)
         assetList = ftrackUtils.getAllAssets(newPath)
         self.assetDrop.addItems(assetList)
+        self.updateStatusDrop(newPath)
+
+    def updateStatusDrop(self, projectPath):
+        statusList = ftrackUtils.getAllStatuses(projectPath)
+        self.statusDrop.clear()
+        self.statusDrop.addItems(statusList)
+        currentStatus = ftrackUtils.getCurrentStatus(projectPath)
+        self.statusDrop.setCurrentIndex(statusList.index(currentStatus))
 
     def openBrowserDialog(self):
         taskpath = str(self.taskEdit.text())
@@ -167,12 +205,15 @@ class MovieUploadWidget(QtGui.QWidget):
         self.gui.show()
         self.gui.winClosed.connect(self.setPath)
 
+    def enableUploadButton(self):
+        self.uploadButton.setEnabled(True)
 
-def main():
+
+'''def main():
     app = QtGui.QApplication(sys.argv)
     gui = MovieUploadWidget()
     gui.show()
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    main()
+    main()'''

@@ -60,6 +60,15 @@ def getNode(nodePath):
                     break
     return parent
 
+def getTask(projPath):
+    parent = getNode(projPath)
+    taskName = projPath.split(' / ')[-1]
+    task = parent
+    for tasks in parent.getTasks():
+        if tasks.getName() == taskName:
+            task = tasks
+    return task
+
 def getAllChildren(projPath):
     parent = getNode(projPath)
     children = parent.getChildren()
@@ -85,3 +94,16 @@ def getAllAssets(projPath):
     assets = parent.getAssets()
     assetList = [asset.getName() for asset in assets]
     return assetList
+
+def getAllStatuses(projPath):
+    projectName = projPath.split(' / ')[0]
+    project = getProject(projectName)
+    task = getTask(projPath)
+    taskType = task.getType()
+    statusList = [status.getName() for status in project.getTaskStatuses(taskType)]
+    return statusList
+
+def getCurrentStatus(projPath):
+    task = getTask(projPath)
+    status = task.getStatus()
+    return status.getName()

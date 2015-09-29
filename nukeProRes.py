@@ -9,6 +9,7 @@ import utils
 import ftrackUtils
 import PySide.QtGui as QtGui
 from widgets import FileBrowseWidget
+from ftrackUpload import MovieUploadWidget
 
 
 class NukeProResWindow(QtGui.QWidget):
@@ -16,7 +17,9 @@ class NukeProResWindow(QtGui.QWidget):
         QtGui.QWidget.__init__(self, parent)
         self.setLayout(QtGui.QGridLayout())
         self.setMinimumSize(320,200)
-        viewerBox = QtGui.QGroupBox('File Options')
+        tabWidget = QtGui.QTabWidget()
+        frameBox = QtGui.QWidget()
+        viewerBox = QtGui.QGroupBox('')
         viewerBox.setMaximumSize(500, 150)
         vLayout = QtGui.QVBoxLayout()
         basedir, infile = ftrackUtils.getInputFilePath(os.environ['FTRACK_SHOTID'])
@@ -32,7 +35,9 @@ class NukeProResWindow(QtGui.QWidget):
         vLayout.addWidget(self.inputWidget)
         vLayout.addWidget(self.outputWidget)
         viewerBox.setLayout(vLayout)
-        self.layout().addWidget(viewerBox)
+        frameLayout = QtGui.QVBoxLayout()
+        frameBox.setLayout(frameLayout)
+        frameLayout.addWidget(viewerBox)
 
         # Setup the slug checkbox
         hLayout = QtGui.QHBoxLayout()
@@ -44,7 +49,7 @@ class NukeProResWindow(QtGui.QWidget):
 
         # Setup the slug options and set visibility to False.
         self.slugFrameBox = QtGui.QGroupBox('Slug Options')
-        self.layout().addWidget(self.slugFrameBox,1,0)
+        frameLayout.addWidget(self.slugFrameBox)
         hslugLayout = QtGui.QGridLayout()
         self.slugFrameBox.setLayout(hslugLayout)
         hslugLayout.addWidget(QtGui.QLabel('Slug Label'),0,0)
@@ -57,8 +62,13 @@ class NukeProResWindow(QtGui.QWidget):
         createButton.clicked.connect(self.createMovie)
         hLayout2.addWidget(createButton)
         hLayout2.addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum))
-        self.layout().addLayout(hLayout2, 2, 0)
-        self.layout().addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding), 3, 0)
+        frameLayout.addLayout(hLayout2)
+        frameLayout.addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding))
+
+        tabWidget.addTab(frameBox, 'ProRes Options')
+        movieWidget = MovieUploadWidget()
+        tabWidget.addTab(movieWidget, 'Ftrack Upload Options')
+        self.layout().addWidget(tabWidget)
 
     def showSlugOptions(self, state):
         '''
