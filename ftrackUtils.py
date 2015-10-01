@@ -2,7 +2,9 @@ __author__ = 'Natasha'
 
 import ftrack
 import os
-
+import shlex
+import subprocess
+import json
 
 def getInputFilePath(shotid):
     baseDir = 'P:\\'
@@ -100,10 +102,85 @@ def getAllStatuses(projPath):
     project = getProject(projectName)
     task = getTask(projPath)
     taskType = task.getType()
-    statusList = [status.getName() for status in project.getTaskStatuses(taskType)]
+    statuses = project.getTaskStatuses(taskType)
+    return statuses
+
+def getStatusList(projPath):
+    statuses = getAllStatuses(projPath)
+    statusList = [status.getName() for status in statuses]
     return statusList
 
 def getCurrentStatus(projPath):
     task = getTask(projPath)
     status = task.getStatus()
     return status.getName()
+
+def convertMp4Files(inputFile, outfilemp4):
+    mp4cmd = 'ffmpeg -y -i "%s" -ac 2 -b:v 2000k -c:a aac -c:v libx264 ' \
+             '-pix_fmt yuv420p -g 30 -vf scale="trunc((a*oh)/2)*2:720" ' \
+             '-b:a 160k -vprofile high -bf 0 -strict experimental -f mp4 "%s"' % (inputFile, outfilemp4)
+    args = shlex.split(mp4cmd)
+    result = subprocess.call(args, shell=True)
+    return result
+
+def convertWebmFiles(inputFile, outfilewebm):
+    webmcmd = 'ffmpeg -y -i "%s" -qscale:a 6 -g 30 -ac 2 -c:a libvorbis ' \
+              '-c:v libvpx -pix_fmt yuv420p -b:v 2000k -vf scale="trunc((a*oh)/2)*2:720" ' \
+              '-crf 5 -qmin 0 -qmax 50 -f webm "%s"' % (inputFile, outfilewebm)
+    args = shlex.split(webmcmd)
+    result = subprocess.call(args, shell=True)
+    return result
+
+def createThumbnail(inputFile, outputFile):
+    cmd = 'ffmpeg -y -i "%s" -vf  "thumbnail,scale=640:360" -frames:v 1 "%s"' % (inputFile, outputFile)
+    args = shlex.split(cmd)
+    result = subprocess.call(args, shell=True)
+    return result
+
+def getAsset(filePath, assetName):
+    parent = getNode(filePath)
+    assets = parent.getAssets()
+    asset = ''
+    for each in assets:
+        if each.getName() == assetName:
+            asset = each
+            break
+    if asset == '':
+        asset = parent.createAsset(name=assetName,
+                                   assetType='ftrack_generic_type')
+    return asset
+
+def createAttachment(version, name, outfile):
+    baseAttachmentUrl = '/attachment/getAttachment?attachmentid={0}'
+    attachment = version.createAttachment(outfile)
+    component = version.createComponent(name=name, path=baseAttachmentUrl.format(attachment.getId()))
+    metadata = json.dumps({
+        'frameIn' : 0,
+        'frameOut' : 150,
+        'frameRate' : 25
+    })
+    component.setMeta(key='ftr_meta', value=metadata)
+
+
+def createAndPublishVersion(filePath, comment, asset, outfilemp4, outfilewebm, thumbnail):
+    task = getTask(filePath)
+    version = asset.createVersion(comment=comment, taskid=task.getId())
+    createAttachment(version, 'ftrackreview-mp4', outfilemp4)
+    createAttachment(version, 'ftrackreview-webm', outfilewebm)
+    if os.path.exists(thumbnail):
+        attachment = version.createAttachment(thumbnail)
+        version.setThumbnail(attachment)
+    version.publish()
+
+def getStatus(projPath, statusName):
+    statuses = getAllStatuses(projPath)
+    status = ''
+    for status in statuses:
+        if status.getName() == statusName:
+            break
+    return status
+
+def setTaskStatus(filePath, statusName):
+    task = getTask(filePath)
+    status = getStatus(filePath, statusName)
+    task.setStatus(status)

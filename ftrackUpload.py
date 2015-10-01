@@ -3,10 +3,10 @@ __author__ = 'natasha'
 import PySide.QtGui as QtGui
 import ftrackUtils
 from PySide.QtCore import Signal
-# import os, sys
-# os.environ['USERNAME'] = 'Natasha'
+import os, sys
 
 iconPath = 'P:\\dev\\ftrack-connect-package\\resource\\ftrack_connect_nuke\\nuke_path\\NukeProResPlugin'
+
 
 class BrowserDialog(QtGui.QDialog):
 
@@ -165,6 +165,7 @@ class MovieUploadWidget(QtGui.QWidget):
 
         self.uploadButton = QtGui.QPushButton('Upload')
         self.uploadButton.setDisabled(True)
+        self.uploadButton.clicked.connect(self.uploadMovie)
         self.layout().addWidget(self.uploadButton, 5, 0)
         self.layout().addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding), 6, 0)
 
@@ -193,7 +194,7 @@ class MovieUploadWidget(QtGui.QWidget):
         self.updateStatusDrop(newPath)
 
     def updateStatusDrop(self, projectPath):
-        statusList = ftrackUtils.getAllStatuses(projectPath)
+        statusList = ftrackUtils.getStatusList(projectPath)
         self.statusDrop.clear()
         self.statusDrop.addItems(statusList)
         currentStatus = ftrackUtils.getCurrentStatus(projectPath)
@@ -208,12 +209,37 @@ class MovieUploadWidget(QtGui.QWidget):
     def enableUploadButton(self):
         self.uploadButton.setEnabled(True)
 
+    def uploadMovie(self):
+        inputFile = 'P:\\ftrack_test\\shots\\ep01\\sq01\\sq003_Nostril_sh002_comp\\mov\\e01_sh010_v06.mov'
+        outfilemp4 =  'P:\\ftrack_test\\shots\\ep01\\sq01\\sq003_Nostril_sh002_comp\\mov\\e01_sh010_v06.mp4'
+        outfilewebm = 'P:\\ftrack_test\\shots\\ep01\\sq01\\sq003_Nostril_sh002_comp\\mov\\e01_sh010_v06.webm'
+        thumnbail = 'P:\\ftrack_test\\shots\\ep01\\sq01\\sq003_Nostril_sh002_comp\\mov\\thumbnail.png'
+        result = self.convertFiles(inputFile, outfilemp4, outfilewebm)
+        comment = str(self.commentBox.toPlainText())
+        if result:
+            thumbresult = ftrackUtils.createThumbnail(outfilemp4, thumnbail)
+            taskPath = str(self.taskEdit.text())
+            assetName = str(self.assetDrop.currentText())
+            if assetName == 'new':
+                assetName = str(self.assetEdit.text())
+            asset = ftrackUtils.getAsset(taskPath, assetName)
+            ftrackUtils.createAndPublishVersion(taskPath, comment, asset, outfilemp4, outfilewebm, thumnbail)
+            ftrackUtils.setTaskStatus(taskPath, str(self.statusDrop.currentText()))
 
-'''def main():
+    def convertFiles(self, inputFile, outfilemp4, outfilewebm):
+        mp4Result = ftrackUtils.convertMp4Files(inputFile, outfilemp4)
+        webmResult = ftrackUtils.convertWebmFiles(inputFile, outfilewebm)
+
+        if mp4Result == 0 and webmResult == 0:
+            return True
+        else:
+            return False
+
+def main():
     app = QtGui.QApplication(sys.argv)
     gui = MovieUploadWidget()
     gui.show()
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    main()'''
+    main()
