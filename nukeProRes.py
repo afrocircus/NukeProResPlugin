@@ -39,6 +39,9 @@ class NukeProResWindow(QtGui.QWidget):
         frameBox.setLayout(frameLayout)
         frameLayout.addWidget(viewerBox)
 
+        movieWidget = MovieUploadWidget()
+        self.outputWidget.fileEdit.textChanged.connect(movieWidget.setMoviePath)
+
         # Setup the slug checkbox
         hLayout = QtGui.QHBoxLayout()
         self.slugBox = QtGui.QCheckBox('Slug')
@@ -66,7 +69,6 @@ class NukeProResWindow(QtGui.QWidget):
         frameLayout.addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding))
 
         tabWidget.addTab(frameBox, 'ProRes Options')
-        movieWidget = MovieUploadWidget()
         tabWidget.addTab(movieWidget, 'Ftrack Upload Options')
         self.layout().addWidget(tabWidget)
 

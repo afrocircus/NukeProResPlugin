@@ -1,6 +1,7 @@
 __author__ = 'natasha'
 
 import PySide.QtGui as QtGui
+from PySide.QtCore import Qt
 import ftrackUtils
 from PySide.QtCore import Signal
 import os, sys
@@ -119,6 +120,16 @@ class BrowserDialog(QtGui.QDialog):
         self.close()
 
 
+class MyLabel(QtGui.QLabel):
+    def paintEvent( self, event ):
+        painter = QtGui.QPainter(self)
+
+        metrics = QtGui.QFontMetrics(self.font())
+        elided = metrics.elidedText(self.text(), Qt.ElideMiddle, self.width())
+
+        painter.drawText(self.rect(), self.alignment(), elided)
+
+
 class MovieUploadWidget(QtGui.QWidget):
     def __init__(self, parent=None):
         QtGui.QWidget.__init__(self, parent)
@@ -163,11 +174,20 @@ class MovieUploadWidget(QtGui.QWidget):
         hlayout1.addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum))
         self.layout().addLayout(hlayout1, 4, 1)
 
+        self.layout().addWidget(QtGui.QLabel('Output Movie'), 5, 0)
+        self.movieLabel = MyLabel()
+        self.movieLabel.setMinimumWidth(100)
+        self.movieLabel.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        self.layout().addWidget(self.movieLabel)
+
         self.uploadButton = QtGui.QPushButton('Upload')
         self.uploadButton.setDisabled(True)
         self.uploadButton.clicked.connect(self.uploadMovie)
-        self.layout().addWidget(self.uploadButton, 5, 0)
-        self.layout().addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding), 6, 0)
+        self.layout().addWidget(self.uploadButton, 6, 0)
+        self.layout().addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding), 7, 0)
+
+    def setMoviePath(self, moviePath):
+        self.movieLabel.setText(str(moviePath))
 
     def setPath(self, newPath):
         self.taskEdit.setText(newPath)
@@ -210,10 +230,10 @@ class MovieUploadWidget(QtGui.QWidget):
         self.uploadButton.setEnabled(True)
 
     def uploadMovie(self):
-        inputFile = 'P:\\ftrack_test\\shots\\ep01\\sq01\\sq003_Nostril_sh002_comp\\mov\\e01_sh010_v06.mov'
-        outfilemp4 =  'P:\\ftrack_test\\shots\\ep01\\sq01\\sq003_Nostril_sh002_comp\\mov\\e01_sh010_v06.mp4'
-        outfilewebm = 'P:\\ftrack_test\\shots\\ep01\\sq01\\sq003_Nostril_sh002_comp\\mov\\e01_sh010_v06.webm'
-        thumnbail = 'P:\\ftrack_test\\shots\\ep01\\sq01\\sq003_Nostril_sh002_comp\\mov\\thumbnail.png'
+        inputFile = str(self.movieLabel.text())
+        outfilemp4 =  os.path.splitext(inputFile)[0] + '.mp4'
+        outfilewebm = os.path.splitext(inputFile)[0] + '.webm'
+        thumnbail = os.path.join(os.path.split(inputFile)[0], 'thumbnail.png')
         result = self.convertFiles(inputFile, outfilemp4, outfilewebm)
         comment = str(self.commentBox.toPlainText())
         if result:
@@ -223,8 +243,18 @@ class MovieUploadWidget(QtGui.QWidget):
             if assetName == 'new':
                 assetName = str(self.assetEdit.text())
             asset = ftrackUtils.getAsset(taskPath, assetName)
+
             ftrackUtils.createAndPublishVersion(taskPath, comment, asset, outfilemp4, outfilewebm, thumnbail)
             ftrackUtils.setTaskStatus(taskPath, str(self.statusDrop.currentText()))
+        self.deleteFiles(outfilemp4, outfilewebm, thumnbail)
+
+    def deleteFiles(self, outfilemp4, outfilewebm, thumbnail):
+        if os.path.exists(outfilemp4):
+            os.remove(outfilemp4)
+        if os.path.exists(outfilewebm):
+            os.remove(outfilewebm)
+        if os.path.exists(thumbnail):
+            os.remove(thumbnail)
 
     def convertFiles(self, inputFile, outfilemp4, outfilewebm):
         mp4Result = ftrackUtils.convertMp4Files(inputFile, outfilemp4)
@@ -235,11 +265,11 @@ class MovieUploadWidget(QtGui.QWidget):
         else:
             return False
 
-def main():
+'''def main():
     app = QtGui.QApplication(sys.argv)
     gui = MovieUploadWidget()
     gui.show()
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    main()
+    main()'''
