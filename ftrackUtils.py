@@ -167,23 +167,23 @@ def getAsset(filePath, assetName):
                                    assetType='ftrack_generic_type')
     return asset
 
-def createAttachment(version, name, outfile):
+def createAttachment(version, name, outfile, framein, frameout):
     baseAttachmentUrl = '/attachment/getAttachment?attachmentid={0}'
     attachment = version.createAttachment(outfile)
     component = version.createComponent(name=name, path=baseAttachmentUrl.format(attachment.getId()))
     metadata = json.dumps({
-        'frameIn' : 0,
-        'frameOut' : 150,
+        'frameIn' : framein,
+        'frameOut' : frameout,
         'frameRate' : 25
     })
     component.setMeta(key='ftr_meta', value=metadata)
 
 
-def createAndPublishVersion(filePath, comment, asset, outfilemp4, outfilewebm, thumbnail):
+def createAndPublishVersion(filePath, comment, asset, outfilemp4, outfilewebm, thumbnail, framein, frameout):
     task = getTask(filePath)
     version = asset.createVersion(comment=comment, taskid=task.getId())
-    createAttachment(version, 'ftrackreview-mp4', outfilemp4)
-    createAttachment(version, 'ftrackreview-webm', outfilewebm)
+    createAttachment(version, 'ftrackreview-mp4', outfilemp4, framein, frameout)
+    createAttachment(version, 'ftrackreview-webm', outfilewebm, framein, frameout)
     if os.path.exists(thumbnail):
         attachment = version.createAttachment(thumbnail)
         version.setThumbnail(attachment)

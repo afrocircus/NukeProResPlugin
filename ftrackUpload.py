@@ -140,6 +140,8 @@ class MovieUploadWidget(QtGui.QWidget):
     def __init__(self, parent=None, taskid=None):
         QtGui.QWidget.__init__(self, parent)
         self.setLayout(QtGui.QGridLayout())
+        self.frameIn = 0
+        self.frameOut = 150
         frameBox = QtGui.QWidget()
         frameLayout = QtGui.QGridLayout()
         frameBox.setLayout(frameLayout)
@@ -199,6 +201,12 @@ class MovieUploadWidget(QtGui.QWidget):
         frameLayout.addWidget(self.uploadButton, 6, 0)
         self.layout().addWidget(frameBox)
         self.layout().addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding), 1, 0)
+        if not taskPath == '':
+            self.updateAssetDrop()
+
+    def setFrameCount(self, framein, frameout):
+        self.frameIn = framein
+        self.frameOut = frameout
 
     def setMoviePath(self, moviePath):
         self.movieLabel.setText(str(moviePath))
@@ -264,7 +272,9 @@ class MovieUploadWidget(QtGui.QWidget):
                 assetName = str(self.assetEdit.text())
             asset = ftrackUtils.getAsset(taskPath, assetName)
 
-            ftrackUtils.createAndPublishVersion(taskPath, comment, asset, outfilemp4, outfilewebm, thumnbail)
+            ftrackUtils.createAndPublishVersion(taskPath, comment, asset,
+                                                outfilemp4, outfilewebm, thumnbail,
+                                                self.frameIn, self.frameOut)
             ftrackUtils.setTaskStatus(taskPath, str(self.statusDrop.currentText()))
         self.deleteFiles(outfilemp4, outfilewebm, thumnbail)
 

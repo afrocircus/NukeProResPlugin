@@ -5,6 +5,7 @@ import threading
 import os
 import re
 import nuke
+import nukescripts
 import utils
 import ftrackUtils
 import PySide.QtGui as QtGui
@@ -39,10 +40,10 @@ class NukeProResWindow(QtGui.QWidget):
         frameBox.setLayout(frameLayout)
         frameLayout.addWidget(viewerBox)
 
-        movieWidget = MovieUploadWidget(taskid=os.environ['FTRACK_TASKID'])
-        movieWidget.setMoviePath(str(self.outputWidget.getFilePath()))
-        self.outputWidget.fileEdit.textChanged.connect(movieWidget.setMoviePath)
-        movieWidget.uploadComplete.connect(self.showUploadCompleteDialog)
+        self.movieWidget = MovieUploadWidget(taskid=os.environ['FTRACK_TASKID'])
+        self.movieWidget.setMoviePath(str(self.outputWidget.getFilePath()))
+        self.outputWidget.fileEdit.textChanged.connect(self.movieWidget.setMoviePath)
+        self.movieWidget.uploadComplete.connect(self.showUploadCompleteDialog)
 
         # Setup the slug checkbox
         hLayout = QtGui.QHBoxLayout()
@@ -67,16 +68,25 @@ class NukeProResWindow(QtGui.QWidget):
         self.createButton = QtGui.QPushButton('Create Movie')
         self.createButton.clicked.connect(self.createMovie)
         hLayout2.addWidget(self.createButton)
-        self.openVideoButton = QtGui.QPushButton('Open Movie')
-        hLayout2.addWidget(self.openVideoButton)
-        self.openVideoButton.clicked.connect(self.openMovieFile)
+        #self.openVideoButton = QtGui.QPushButton('Open Movie')
+        #hLayout2.addWidget(self.openVideoButton)
+        #self.openVideoButton.clicked.connect(self.openMovieFile)
         hLayout2.addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum))
         frameLayout.addLayout(hLayout2)
         frameLayout.addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding))
 
         tabWidget.addTab(frameBox, 'ProRes Options')
-        tabWidget.addTab(movieWidget, 'Ftrack Upload Options')
+        tabWidget.addTab(self.movieWidget, 'Ftrack Upload Options')
         self.layout().addWidget(tabWidget)
+        self.getFrameCount()
+
+    def getFrameCount(self):
+        infile = str(self.inputWidget.getFilePath())
+        if infile:
+            inputFolder = os.path.dirname(str(infile))
+            imageExt = str(infile).split('.')[-1]
+            shotName, firstFrame, lastFrame, date, firstFrameStr = utils.getShotInfo(str(inputFolder), str(imageExt))
+            self.movieWidget.setFrameCount(firstFrame, lastFrame)
 
     def showSlugOptions(self, state):
         '''
@@ -122,6 +132,7 @@ class NukeProResWindow(QtGui.QWidget):
             outputFile = '%s.mov' % outputFile
 
         shotName, firstFrame, lastFrame, date, firstFrameStr = utils.getShotInfo(inputFolder, imageExt)
+        self.movieWidget.setFrameCount(firstFrame, lastFrame)
 
         if slugChoice == 2:
             tmpDir = '%s\\tmp' % os.environ['TEMP']
@@ -179,11 +190,10 @@ class NukeProResWindow(QtGui.QWidget):
     def openMovieFile(self):
         outfile = str(self.outputWidget.getFilePath())
         if os.path.exists(outfile):
-            videoDir = utils.getVideoPlayer()
-            if not videoDir == '':
-                utils.openOutputMovie(outfile, videoDir)
-            else:
-                nuke.message('Video Player Error! QuickTime or VLC not installed.')
+            outfile = outfile.replace('\\', '/')
+            node = nuke.nodes.Read(file=outfile)
+            node.knob('selected').setValue(True)
+            nukescripts.connect_selected_to_viewer(0)
         else:
             nuke.message('Movie does not exist. Cannot play the video.')
 
