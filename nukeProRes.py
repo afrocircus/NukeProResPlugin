@@ -39,8 +39,10 @@ class NukeProResWindow(QtGui.QWidget):
         frameBox.setLayout(frameLayout)
         frameLayout.addWidget(viewerBox)
 
-        movieWidget = MovieUploadWidget()
+        movieWidget = MovieUploadWidget(taskid=os.environ['FTRACK_TASKID'])
+        movieWidget.setMoviePath(str(self.outputWidget.getFilePath()))
         self.outputWidget.fileEdit.textChanged.connect(movieWidget.setMoviePath)
+        movieWidget.uploadComplete.connect(self.showUploadCompleteDialog)
 
         # Setup the slug checkbox
         hLayout = QtGui.QHBoxLayout()
@@ -59,11 +61,15 @@ class NukeProResWindow(QtGui.QWidget):
         self.slugTextBox = QtGui.QLineEdit('Customize Slug Label')
         hslugLayout.addWidget(self.slugTextBox,0,1)
         self.slugFrameBox.setVisible(False)
+        self.slugFrameBox.setMaximumSize(500, 150)
 
         hLayout2 = QtGui.QHBoxLayout()
-        createButton = QtGui.QPushButton('Create Movie')
-        createButton.clicked.connect(self.createMovie)
-        hLayout2.addWidget(createButton)
+        self.createButton = QtGui.QPushButton('Create Movie')
+        self.createButton.clicked.connect(self.createMovie)
+        hLayout2.addWidget(self.createButton)
+        self.openVideoButton = QtGui.QPushButton('Open Movie')
+        hLayout2.addWidget(self.openVideoButton)
+        self.openVideoButton.clicked.connect(self.openMovieFile)
         hLayout2.addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum))
         frameLayout.addLayout(hLayout2)
         frameLayout.addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding))
@@ -80,6 +86,9 @@ class NukeProResWindow(QtGui.QWidget):
         '''
         if state == 2:
             self.slugFrameBox.setVisible(True)
+            infile = str(self.inputWidget.getFilePath())
+            if infile:
+                self.setSlugLabel(infile)
         else:
             self.slugFrameBox.setVisible(False)
 
@@ -90,11 +99,15 @@ class NukeProResWindow(QtGui.QWidget):
         '''
         inputFolder = os.path.dirname(str(filename))
         imageExt = str(filename).split('.')[-1]
-        shotName, firstFrame,lastFrame, date, firstFrameStr = utils.getShotInfo(str(inputFolder), str(imageExt))
-        label = 'Quarks %s %s Frame#' % (date, shotName)
+        if inputFolder:
+            shotName, firstFrame,lastFrame, date, firstFrameStr = utils.getShotInfo(str(inputFolder), str(imageExt))
+            label = 'Quarks %s %s Frame#' % (date, shotName)
+        else:
+            label = 'Customize Slug Label'
         self.slugTextBox.setText(label)
 
     def createMovie(self):
+        self.createButton.setDisabled(True)
         inputFile = self.inputWidget.getFilePath()
         outputFile = str(self.outputWidget.getFilePath())
 
@@ -160,4 +173,19 @@ class NukeProResWindow(QtGui.QWidget):
                 QtGui.QApplication.processEvents()
                 task.setProgress(int(progress+curValue))
             if not chatter:
+                self.createButton.setEnabled(True)
                 break
+
+    def openMovieFile(self):
+        outfile = str(self.outputWidget.getFilePath())
+        if os.path.exists(outfile):
+            videoDir = utils.getVideoPlayer()
+            if not videoDir == '':
+                utils.openOutputMovie(outfile, videoDir)
+            else:
+                nuke.message('Video Player Error! QuickTime or VLC not installed.')
+        else:
+            nuke.message('Movie does not exist. Cannot play the video.')
+
+    def showUploadCompleteDialog(self, txt):
+        nuke.message(txt)

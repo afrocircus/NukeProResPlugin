@@ -1,13 +1,10 @@
 __author__ = 'Natasha'
 
 import subprocess
-import threading
 import shlex
-import sys
 import os
-import shutil
-import re
-import nuke
+import glob
+#import autoit
 from datetime import datetime
 
 def getShotInfo(inputFolder, imageExt):
@@ -149,3 +146,37 @@ def convertExr(inputFolder, fileName, firstFrame, lastFrame, firstFrameStr):
         args[1] = '%s/%s.%s.exr' % (inputFolder, fileName, frameStr)
         args[2] = '%s/exrTmp/%s.%s.exr' % (os.environ['TEMP'], fileName, frameStr)
         subprocess.call(args, shell=True)
+
+def getVideoPlayer():
+    '''
+    Checks if QuickTimePlayer exists. If not checks for VLC player.
+    :return: videoPlayerDir: Path of the video player
+    '''
+    videoPlayerDir = ''
+    videoPlayerDirList = glob.glob('C:\\Program*\\QuickTime*')
+    if videoPlayerDirList:
+        videoPlayerDir = '%s\\QuickTimePlayer.exe' % videoPlayerDirList[0]
+    else:
+        videoPlayerDirList = glob.glob('C:\Program*\\VideoLan*')
+        if videoPlayerDirList:
+            videoPlayerDir = '%s\\VLC\\vlc.exe' % videoPlayerDirList[0]
+    return videoPlayerDir
+
+def openOutputMovie(outputFile, videoPlayerDir):
+    '''
+    Opens the output movie file with the installed player using autoit
+    :param outputFile: Output movie file
+    :param videoPlayerDir: Path of the video player
+    '''
+    if videoPlayerDir == '':
+        return
+    title = outputFile.split('/')[-1].split('.')[0]
+    outputFile = outputFile.replace('/','\\')
+    '''autoit.run('%s %s' % (videoPlayerDir, outputFile))
+    if 'QuickTime' in videoPlayerDir:
+        autoit.win_wait(title, 100)
+        import time
+        # This is a hack. We wait 3 sec for the movie to load completely before sending the next signal.
+        # Otherwise the signal is not registered.
+        time.sleep(1)
+        autoit.control_send(title, '', '{CTRLDOWN}0{CTRLUP}')'''

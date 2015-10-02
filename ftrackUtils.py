@@ -38,6 +38,16 @@ def getOutputFilePath(baseDir, inputFile):
     outputFile = '%s.mov' % outputFile
     return outputFile
 
+def getTaskPath(taskid):
+    task = ftrack.Shot(id=taskid)
+    taskName = task.getName()
+    hierarchy = reversed(task.getParents())
+    taskPath = ''
+    for parent in hierarchy:
+        taskPath = taskPath + parent.getName() + ' / '
+    taskPath = taskPath + taskName
+    return taskPath
+
 def getAllProjectNames():
     projects = ftrack.getProjects()
     projList = [proj.getName() for proj in projects]
@@ -70,6 +80,13 @@ def getTask(projPath):
         if tasks.getName() == taskName:
             task = tasks
     return task
+
+def isTask(taskPath):
+    task = getTask(taskPath)
+    if task.get('objecttypename') == 'Task':
+        return True
+    else:
+        return False
 
 def getAllChildren(projPath):
     parent = getNode(projPath)

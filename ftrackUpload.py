@@ -2,6 +2,7 @@ __author__ = 'natasha'
 
 import PySide.QtGui as QtGui
 from PySide.QtCore import Qt
+import threading
 import ftrackUtils
 from PySide.QtCore import Signal
 import os, sys
@@ -48,7 +49,8 @@ class BrowserDialog(QtGui.QDialog):
         if not self.taskPath == '':
             self.pathEdit.setText(self.taskPath)
             self.createTaskList(self.taskPath)
-            self.setProjPath()
+            if ftrackUtils.isTask(taskPath):
+                self.setProjPath()
 
     def createProjList(self, projList):
         projects = ftrackUtils.getAllProjectNames()
@@ -62,6 +64,7 @@ class BrowserDialog(QtGui.QDialog):
         self.projPath = ''
         self.pathEdit.setText(str(item.text()))
         self.createTaskList(str(item.text()))
+        self.setButton.setDisabled(True)
 
     def isAllTasks(self):
         for type, name in self.childList:
@@ -131,19 +134,29 @@ class MyLabel(QtGui.QLabel):
 
 
 class MovieUploadWidget(QtGui.QWidget):
-    def __init__(self, parent=None):
+
+    uploadComplete = Signal(str)
+
+    def __init__(self, parent=None, taskid=None):
         QtGui.QWidget.__init__(self, parent)
         self.setLayout(QtGui.QGridLayout())
-        self.layout().addWidget(QtGui.QLabel('Link To:'))
-        self.taskEdit = QtGui.QLineEdit()
+        frameBox = QtGui.QWidget()
+        frameLayout = QtGui.QGridLayout()
+        frameBox.setLayout(frameLayout)
+        frameLayout.addWidget(QtGui.QLabel('Link To:'))
+        taskid = taskid
+        taskPath = ''
+        if taskid:
+            taskPath = ftrackUtils.getTaskPath(taskid)
+        self.taskEdit = QtGui.QLineEdit(taskPath)
         self.taskEdit.setReadOnly(True)
-        self.layout().addWidget(self.taskEdit, 0, 1)
+        frameLayout.addWidget(self.taskEdit, 0, 1)
         self.taskEdit.textChanged.connect(self.updateAssetDrop)
         self.browseButton = QtGui.QPushButton('Browse')
         self.browseButton.clicked.connect(self.openBrowserDialog)
-        self.layout().addWidget(self.browseButton, 0, 2)
+        frameLayout.addWidget(self.browseButton, 0, 2)
 
-        self.layout().addWidget(QtGui.QLabel('Assets:'), 1, 0)
+        frameLayout.addWidget(QtGui.QLabel('Assets:'), 1, 0)
         hlayout = QtGui.QHBoxLayout()
         self.assetDrop = QtGui.QComboBox()
         self.assetDrop.addItem('Select')
@@ -152,39 +165,40 @@ class MovieUploadWidget(QtGui.QWidget):
         self.assetDrop.activated[str].connect(self.assetSelected)
         hlayout.addWidget(self.assetDrop)
         hlayout.addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum))
-        self.layout().addLayout(hlayout, 1, 1)
+        frameLayout.addLayout(hlayout, 1, 1)
 
-        self.layout().addWidget(QtGui.QLabel('Asset Name:'), 2, 0)
+        frameLayout.addWidget(QtGui.QLabel('Asset Name:'), 2, 0)
         self.assetEdit = QtGui.QLineEdit()
         self.assetEdit.setDisabled(True)
-        self.layout().addWidget(self.assetEdit)
+        frameLayout.addWidget(self.assetEdit)
 
         vLayout = QtGui.QVBoxLayout()
         vLayout.addWidget(QtGui.QLabel('Comment'))
         vLayout.addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding))
-        self.layout().addLayout(vLayout, 3, 0)
+        frameLayout.addLayout(vLayout, 3, 0)
         self.commentBox = QtGui.QTextEdit()
-        self.layout().addWidget(self.commentBox, 3, 1)
+        frameLayout.addWidget(self.commentBox, 3, 1)
 
-        self.layout().addWidget(QtGui.QLabel('Status:'), 4, 0)
+        frameLayout.addWidget(QtGui.QLabel('Status:'), 4, 0)
         hlayout1 = QtGui.QHBoxLayout()
         self.statusDrop = QtGui.QComboBox()
         self.statusDrop.setMinimumWidth(100)
         hlayout1.addWidget(self.statusDrop)
         hlayout1.addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum))
-        self.layout().addLayout(hlayout1, 4, 1)
+        frameLayout.addLayout(hlayout1, 4, 1)
 
-        self.layout().addWidget(QtGui.QLabel('Output Movie'), 5, 0)
+        frameLayout.addWidget(QtGui.QLabel('Output Movie'), 5, 0)
         self.movieLabel = MyLabel()
         self.movieLabel.setMinimumWidth(100)
         self.movieLabel.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
-        self.layout().addWidget(self.movieLabel)
+        frameLayout.addWidget(self.movieLabel)
 
         self.uploadButton = QtGui.QPushButton('Upload')
         self.uploadButton.setDisabled(True)
         self.uploadButton.clicked.connect(self.uploadMovie)
-        self.layout().addWidget(self.uploadButton, 6, 0)
-        self.layout().addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding), 7, 0)
+        frameLayout.addWidget(self.uploadButton, 6, 0)
+        self.layout().addWidget(frameBox)
+        self.layout().addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding), 1, 0)
 
     def setMoviePath(self, moviePath):
         self.movieLabel.setText(str(moviePath))
@@ -230,10 +244,16 @@ class MovieUploadWidget(QtGui.QWidget):
         self.uploadButton.setEnabled(True)
 
     def uploadMovie(self):
+        self.uploadButton.setDisabled(True)
+        self.uploadButton.setText('Uploading ...')
         inputFile = str(self.movieLabel.text())
+        inputFile = 'C:\\Users\\Natasha\\Videos\\e01_sh010_v06.mov'
         outfilemp4 =  os.path.splitext(inputFile)[0] + '.mp4'
         outfilewebm = os.path.splitext(inputFile)[0] + '.webm'
         thumnbail = os.path.join(os.path.split(inputFile)[0], 'thumbnail.png')
+        threading.Thread( None, self.newThreadUpload, args=[inputFile, outfilemp4, outfilewebm, thumnbail]).start()
+
+    def newThreadUpload(self, inputFile, outfilemp4, outfilewebm, thumnbail):
         result = self.convertFiles(inputFile, outfilemp4, outfilewebm)
         comment = str(self.commentBox.toPlainText())
         if result:
@@ -255,6 +275,9 @@ class MovieUploadWidget(QtGui.QWidget):
             os.remove(outfilewebm)
         if os.path.exists(thumbnail):
             os.remove(thumbnail)
+        self.uploadButton.setEnabled(True)
+        self.uploadButton.setText('Upload')
+        self.uploadComplete.emit('Upload Complete!')
 
     def convertFiles(self, inputFile, outfilemp4, outfilewebm):
         mp4Result = ftrackUtils.convertMp4Files(inputFile, outfilemp4)
