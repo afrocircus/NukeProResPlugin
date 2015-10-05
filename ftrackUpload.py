@@ -1,11 +1,11 @@
 __author__ = 'natasha'
 
+import os
 import PySide.QtGui as QtGui
 from PySide.QtCore import Qt
 import threading
 import ftrackUtils
 from PySide.QtCore import Signal
-import os, sys
 
 iconPath = 'P:\\dev\\ftrack-connect-package\\resource\\ftrack_connect_nuke\\nuke_path\\NukeProResPlugin'
 

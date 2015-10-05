@@ -145,3 +145,18 @@ def convertExr(inputFolder, fileName, firstFrame, lastFrame, firstFrameStr):
         args[1] = '%s/%s.%s.exr' % (inputFolder, fileName, frameStr)
         args[2] = '%s/exrTmp/%s.%s.exr' % (os.environ['TEMP'], fileName, frameStr)
         subprocess.call(args, shell=True)
+
+def getVideoPlayer():
+    '''
+    Checks if QuickTimePlayer exists. If not checks for VLC player.
+    :return: videoPlayerDir: Path of the video player
+    '''
+    videoPlayerDir = ''
+    videoPlayerDirList = glob.glob('C:\\Program*\\QuickTime*')
+    if videoPlayerDirList:
+        videoPlayerDir = '%s\\QuickTimePlayer.exe' % videoPlayerDirList[0]
+    else:
+        videoPlayerDirList = glob.glob('C:\Program*\\VideoLan*')
+        if videoPlayerDirList:
+            videoPlayerDir = '%s\\VLC\\vlc.exe' % videoPlayerDirList[0]
+    return videoPlayerDir

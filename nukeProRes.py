@@ -1,6 +1,7 @@
 __author__ = 'Natasha'
 
 import subprocess
+import shlex
 import threading
 import os
 import re
@@ -68,9 +69,9 @@ class NukeProResWindow(QtGui.QWidget):
         self.createButton = QtGui.QPushButton('Create Movie')
         self.createButton.clicked.connect(self.createMovie)
         hLayout2.addWidget(self.createButton)
-        #self.openVideoButton = QtGui.QPushButton('Open Movie')
-        #hLayout2.addWidget(self.openVideoButton)
-        #self.openVideoButton.clicked.connect(self.openMovieFile)
+        self.openVideoButton = QtGui.QPushButton('Open Movie')
+        hLayout2.addWidget(self.openVideoButton)
+        self.openVideoButton.clicked.connect(self.openMovieFile)
         hLayout2.addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum))
         frameLayout.addLayout(hLayout2)
         frameLayout.addItem(QtGui.QSpacerItem(10,10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding))
@@ -189,13 +190,25 @@ class NukeProResWindow(QtGui.QWidget):
 
     def openMovieFile(self):
         outfile = str(self.outputWidget.getFilePath())
+        outfile = outfile.replace('/', '\\')
         if os.path.exists(outfile):
-            outfile = outfile.replace('\\', '/')
-            node = nuke.nodes.Read(file=outfile)
-            node.knob('selected').setValue(True)
-            nukescripts.connect_selected_to_viewer(0)
+            videoPlayerDir = utils.getVideoPlayer()
+            if not videoPlayerDir == '':
+                self.openVideoButton.setText('Opening Movie ...')
+                self.openVideoButton.setDisabled(True)
+                threading.Thread(None, self.playMovie, args=[outfile, videoPlayerDir]).start()
+            else:
+                nuke.message('Video player error: QuickTime or VLC not installed.')
         else:
             nuke.message('Movie does not exist. Cannot play the video.')
 
     def showUploadCompleteDialog(self, txt):
         nuke.message(txt)
+
+    def playMovie(self, movFile, videoPlayerDir):
+        cmd = '"%s" "%s"' % (videoPlayerDir, movFile)
+        args = shlex.split(cmd)
+        result = subprocess.call(args,  shell=True)
+        self.openVideoButton.setText('Open Movie')
+        self.openVideoButton.setEnabled(True)
+        return result
