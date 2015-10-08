@@ -25,7 +25,10 @@ class NukeProResWindow(QtGui.QWidget):
         viewerBox.setMaximumSize(500, 150)
         vLayout = QtGui.QVBoxLayout()
         basedir, infile = ftrackUtils.getInputFilePath(os.environ['FTRACK_SHOTID'])
-        outfile = ftrackUtils.getOutputFilePath(basedir, infile)
+        if not infile == '':
+            outfile = ftrackUtils.getOutputFilePath(basedir, infile)
+        else:
+            outfile = ''
         self.inputWidget = FileBrowseWidget("Input Image File  ", infile, outfile)
         self.inputWidget.addOpenFileDialogEvent()
         self.outputWidget = FileBrowseWidget("Output Movie File", outfile, outfile)

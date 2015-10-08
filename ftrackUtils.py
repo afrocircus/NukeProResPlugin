@@ -21,12 +21,13 @@ def getInputFilePath(shotid):
             imgDir = os.path.join(imgDir, p.getName())
 
     baseDir = os.path.join(imgDir, shotName)
+    inputFile = ''
     imgDir = os.path.join(baseDir, 'img\\comp')
-    verDirs = [d for d in os.listdir(imgDir) if os.path.isdir(os.path.join(imgDir, d))]
-    imgDir = os.path.join(imgDir, verDirs[-1])
-    files = [f for f in os.listdir(imgDir) if os.path.isfile(os.path.join(imgDir, f))]
-
-    inputFile = os.path.join(imgDir, files[0])
+    if os.path.exists(imgDir):
+        verDirs = [d for d in os.listdir(imgDir) if os.path.isdir(os.path.join(imgDir, d))]
+        imgDir = os.path.join(imgDir, verDirs[-1])
+        files = [f for f in os.listdir(imgDir) if os.path.isfile(os.path.join(imgDir, f))]
+        inputFile = os.path.join(imgDir, files[0])
     return baseDir, inputFile
 
 def getOutputFilePath(baseDir, inputFile):
