@@ -115,7 +115,8 @@ class NukeProResWindow(QtGui.QWidget):
         imageExt = str(filename).split('.')[-1]
         if inputFolder:
             shotName, firstFrame,lastFrame, date, firstFrameStr = utils.getShotInfo(str(inputFolder), str(imageExt))
-            label = 'Quarks %s %s Frame#' % (date, shotName)
+            project = ftrackUtils.getProjectFromShot(os.environ['FTRACK_SHOTID'])
+            label = '%s %s %s Frame#' % (project, date, shotName)
         else:
             label = 'Customize Slug Label'
         self.slugTextBox.setText(label)
@@ -149,10 +150,12 @@ class NukeProResWindow(QtGui.QWidget):
                                                   lastFrame, date, firstFrameStr, task)
             if slugResult != 0:
                 nuke.message("Error while creating slug images!")
+                self.createButton.setEnabled(True)
                 return
             slugMovResult = utils.generateSlugMovie(tmpDir, firstFrame, firstFrameStr)
             if slugMovResult != 0:
                 nuke.message("Error while creating slug movie!")
+                self.createButton.setEnabled(True)
                 return
             finalMovCmd = utils.generateFileMovie(inputFolder, tmpDir, outputFile, firstFrame,
                                                 shotName, imageExt, lastFrame, firstFrameStr)

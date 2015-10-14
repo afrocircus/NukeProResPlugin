@@ -255,7 +255,6 @@ class MovieUploadWidget(QtGui.QWidget):
         self.uploadButton.setDisabled(True)
         self.uploadButton.setText('Uploading ...')
         inputFile = str(self.movieLabel.text())
-        inputFile = 'C:\\Users\\Natasha\\Videos\\e01_sh010_v06.mov'
         outfilemp4 =  os.path.splitext(inputFile)[0] + '.mp4'
         outfilewebm = os.path.splitext(inputFile)[0] + '.webm'
         thumnbail = os.path.join(os.path.split(inputFile)[0], 'thumbnail.png')
