@@ -64,5 +64,7 @@ class FileBrowseWidget(QtGui.QWidget):
         '''
         filename = str(filename)
         newFilename = filename.split('/')[-1].split('.')[0]
+        if self.saveFilePath == '':
+            self.saveFilePath = os.path.dirname(filename)
         newFilePath = '%s/%s.mov' % (os.path.dirname(self.saveFilePath), newFilename)
         self.fileEdit.setText(newFilePath)

@@ -202,3 +202,7 @@ def setTaskStatus(filePath, statusName):
     task = getTask(filePath)
     status = getStatus(filePath, statusName)
     task.setStatus(status)
+
+def getProjectFromShot(id):
+    shot = ftrack.Shot(id=id)
+    return shot.getProject().getName()
