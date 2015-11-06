@@ -24,11 +24,12 @@ class NukeProResWindow(QtGui.QWidget):
         viewerBox = QtGui.QGroupBox('')
         viewerBox.setMaximumSize(500, 150)
         vLayout = QtGui.QVBoxLayout()
-        basedir, infile = ftrackUtils.getInputFilePath(os.environ['FTRACK_SHOTID'])
-        if not infile == '':
-            outfile = ftrackUtils.getOutputFilePath(basedir, infile)
-        else:
-            outfile = ''
+        basedir, inputfile = ftrackUtils.getInputFilePath(os.environ['FTRACK_SHOTID'])
+        outfile = ''
+        infile = ''
+        if not inputfile == '':
+            outfile = ftrackUtils.getOutputFilePath(os.environ['FTRACK_SHOTID'], os.environ['FTRACK_TASKID'], basedir)
+            infile = os.path.join(basedir, inputfile)
         self.inputWidget = FileBrowseWidget("Input Image File  ", infile, outfile)
         self.inputWidget.addOpenFileDialogEvent()
         self.outputWidget = FileBrowseWidget("Output Movie File", outfile, outfile)
@@ -54,6 +55,12 @@ class NukeProResWindow(QtGui.QWidget):
         self.slugBox = QtGui.QCheckBox('Slug')
         hLayout.addWidget(self.slugBox)
         self.slugBox.stateChanged.connect(self.showSlugOptions)
+        hLayout.addItem(QtGui.QSpacerItem(10, 10, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum))
+        hLayout.addWidget(QtGui.QLabel('Frame Rate'))
+        self.frameDrop = QtGui.QComboBox()
+        self.frameDrop.addItems(['24', '25', '30'])
+        hLayout.addWidget(self.frameDrop)
+        hLayout.addItem(QtGui.QSpacerItem(10, 10, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum))
         vLayout.addLayout(hLayout)
         vLayout.addItem(QtGui.QSpacerItem(10, 10, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding))
 
@@ -122,6 +129,8 @@ class NukeProResWindow(QtGui.QWidget):
         self.slugTextBox.setText(label)
 
     def createMovie(self):
+        frameRate = self.frameDrop.currentText()
+        self.movieWidget.setFrameRate(frameRate)
         self.createButton.setDisabled(True)
         inputFile = self.inputWidget.getFilePath()
         outputFile = str(self.outputWidget.getFilePath())
@@ -152,16 +161,16 @@ class NukeProResWindow(QtGui.QWidget):
                 nuke.message("Error while creating slug images!")
                 self.createButton.setEnabled(True)
                 return
-            slugMovResult = utils.generateSlugMovie(tmpDir, firstFrame, firstFrameStr)
+            slugMovResult = utils.generateSlugMovie(tmpDir, firstFrame, firstFrameStr, frameRate)
             if slugMovResult != 0:
                 nuke.message("Error while creating slug movie!")
                 self.createButton.setEnabled(True)
                 return
             finalMovCmd = utils.generateFileMovie(inputFolder, tmpDir, outputFile, firstFrame,
-                                                shotName, imageExt, lastFrame, firstFrameStr)
+                                                shotName, imageExt, lastFrame, firstFrameStr, frameRate)
         else:
             finalMovCmd = utils.generateFileMovieNoSlug(inputFolder, outputFile, firstFrame,
-                                                  shotName, imageExt, lastFrame, firstFrameStr)
+                                                  shotName, imageExt, lastFrame, firstFrameStr, frameRate)
         threading.Thread( None, self.movieProgress, args=[finalMovCmd]).start()
 
         #if os.path.exists('%s/imageSeq' % os.environ['TEMP']):

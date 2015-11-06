@@ -50,6 +50,8 @@ class FileBrowseWidget(QtGui.QWidget):
         dialog = QtGui.QFileDialog()
         filename, fileType = dialog.getSaveFileName(self, "Save File",
             self.saveFilePath, options= QtGui.QFileDialog.DontUseNativeDialog)
+        if not str(filename).endswith('.mov'):
+            filename = str(filename) + '.mov'
         self.fileEdit.setText(str(filename))
 
     def getFilePath(self):

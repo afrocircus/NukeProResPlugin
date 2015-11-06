@@ -59,7 +59,7 @@ def generateSlugImages(tmpDir, label, firstFrame, lastFrame, date, firstFrameStr
             return 1
     return 0
 
-def generateSlugMovie(tmpDir, firstFrame, firstFrameStr):
+def generateSlugMovie(tmpDir, firstFrame, firstFrameStr, frameRate):
     '''
     Generates a movie of the slug images. Stores it in the same temp folder
     :param tmpDir: Temp Folder in the users local temp.
@@ -69,16 +69,16 @@ def generateSlugMovie(tmpDir, firstFrame, firstFrameStr):
     if firstFrameStr[0] == '0':
         frameLen = len(str(firstFrameStr))
         slugMovCmd = 'ffmpeg.exe -y -start_number %s -an -i "%s\\slug.%%0%sd.jpg" ' \
-                     '-vcodec prores -profile:v 2 "%s\\slug.mov"' % (firstFrame, tmpDir, frameLen, tmpDir)
+                     '-vcodec prores -profile:v 2 -r %s "%s\\slug.mov"' % (firstFrame, tmpDir, frameLen, frameRate, tmpDir)
     else:
         frameLen = len(str(firstFrameStr))-1
         slugMovCmd = 'ffmpeg.exe -y -start_number %s -an -i "%s\\slug.1%%0%sd.jpg" ' \
-                     '-vcodec prores -profile:v 2 "%s\\slug.mov"' % (firstFrame, tmpDir, frameLen, tmpDir)
+                     '-vcodec prores -profile:v 2 -r %s "%s\\slug.mov"' % (firstFrame, tmpDir, frameLen, frameRate, tmpDir)
     args = shlex.split(slugMovCmd)
     result = subprocess.call(args, shell=True)
     return result
 
-def generateFileMovie(inputFolder, tmpDir, outputFile, firstFrame, fileName, imageExt, lastFrame, firstFrameStr):
+def generateFileMovie(inputFolder, tmpDir, outputFile, firstFrame, fileName, imageExt, lastFrame, firstFrameStr, frameRate):
     '''
     Composites the slug movie with the input images to generate the final movie.
     '''
@@ -94,18 +94,18 @@ def generateFileMovie(inputFolder, tmpDir, outputFile, firstFrame, fileName, ima
         frameLen = len(str(firstFrameStr))
         finalMovCmd = 'ffmpeg.exe -y -start_number %s -an -i "%s.%%0%sd.%s" ' \
                       '-i "%s\\slug.mov" -metadata comment="Source Image:%s" -filter_complex "overlay=1:1" ' \
-                      '-vcodec prores -profile:v 2 "%s" ' % (firstFrame, filePath, frameLen, imageExt,
-                                                             tmpDir, inputFile, outputFile)
+                      '-vcodec prores -profile:v 2 -r %s "%s" ' % (firstFrame, filePath, frameLen, imageExt,
+                                                             tmpDir, inputFile, frameRate, outputFile)
     else:
         frameLen = len(str(firstFrameStr))-1
         finalMovCmd = 'ffmpeg.exe -y -start_number %s -an -i "%s.1%%0%sd.%s" ' \
                       '-i "%s\\slug.mov" -metadata comment="Source Image:%s" -filter_complex "overlay=1:1" ' \
-                      '-vcodec prores -profile:v 2 "%s" ' % (firstFrame, filePath, frameLen, imageExt,
-                                                             tmpDir, inputFile, outputFile)
+                      '-vcodec prores -profile:v 2 -r %s "%s" ' % (firstFrame, filePath, frameLen, imageExt,
+                                                             tmpDir, inputFile, frameRate, outputFile)
 
     return finalMovCmd
 
-def generateFileMovieNoSlug(inputFolder, outputFile, firstFrame, fileName, imageExt, lastFrame, firstFrameStr):
+def generateFileMovieNoSlug(inputFolder, outputFile, firstFrame, fileName, imageExt, lastFrame, firstFrameStr, frameRate):
     '''
     Generate the movie without the slug, only from the input image sequence.
     '''
@@ -120,14 +120,14 @@ def generateFileMovieNoSlug(inputFolder, outputFile, firstFrame, fileName, image
         frameLen = len(str(firstFrameStr))
         finalMovCmd = 'ffmpeg.exe -y -start_number %s -an -i "%s.%%0%sd.%s" ' \
                       '-metadata comment="Source Image:%s.%s.%s" -vcodec prores ' \
-                      '-profile:v 2 "%s" ' % (firstFrame, filePath, frameLen, imageExt,
-                                              fileName, firstFrame,imageExt, outputFile)
+                      '-profile:v 2 -r %s "%s" ' % (firstFrame, filePath, frameLen, imageExt,
+                                              fileName, firstFrame,imageExt, frameRate, outputFile)
     else:
         frameLen = len(str(firstFrameStr))-1
         finalMovCmd = 'ffmpeg.exe -y -start_number %s -an -i "%s.1%%0%sd.%s" ' \
                       '-metadata comment="Source Image:%s.%s.%s" -vcodec prores ' \
-                      '-profile:v 2 "%s" ' % (firstFrame, filePath, frameLen, imageExt,
-                                              fileName, firstFrame,imageExt, outputFile)
+                      '-profile:v 2 -r %s "%s" ' % (firstFrame, filePath, frameLen, imageExt,
+                                              fileName, firstFrame,imageExt, frameRate, outputFile)
 
     return finalMovCmd
 

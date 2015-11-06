@@ -5,17 +5,21 @@ import os
 import shlex
 import subprocess
 import json
+from datetime import datetime
 
 def getInputFilePath(shotid):
     baseDir = 'P:\\'
     shot = ftrack.Shot(id=shotid)
-    shotName = shot.getName()
+    shotName = '%s_%s' % (shot.getSequence().getName(), shot.getName())
     hierarchy = reversed(shot.getParents())
     imgDir = baseDir
 
     for p in hierarchy:
         if isinstance(p, ftrack.Project):
-            imgDir = os.path.join(imgDir, p.getName())
+            pname = p.getName()
+            if pname == 'willowstr':
+                pname = 'ds_willowStreet'
+            imgDir = os.path.join(imgDir, pname)
             imgDir = os.path.join(imgDir, 'shots')
         else:
             imgDir = os.path.join(imgDir, p.getName())
@@ -25,18 +29,35 @@ def getInputFilePath(shotid):
     imgDir = os.path.join(baseDir, 'img\\comp')
     if os.path.exists(imgDir):
         verDirs = [d for d in os.listdir(imgDir) if os.path.isdir(os.path.join(imgDir, d))]
-        imgDir = os.path.join(imgDir, verDirs[-1])
-        files = [f for f in os.listdir(imgDir) if os.path.isfile(os.path.join(imgDir, f))]
-        inputFile = os.path.join(imgDir, files[0])
-    return baseDir, inputFile
+        if verDirs:
+            imgDir = os.path.join(imgDir, verDirs[-1])
+            files = [f for f in os.listdir(imgDir) if os.path.isfile(os.path.join(imgDir, f))]
+            if files:
+                inputFile = files[0]
+    return imgDir, inputFile
 
-def getOutputFilePath(baseDir, inputFile):
-    movDir = os.path.join(baseDir, 'mov')
-    if not os.path.exists(movDir):
-        os.mkdir(movDir)
-    filename = inputFile.split('\\')[-1]
-    outputFile = os.path.join(movDir, filename.split('.')[0])
-    outputFile = '%s.mov' % outputFile
+def getOutputFilePath(shotid, taskid, inBaseDir):
+    baseDir = 'P:\\'
+    shot = ftrack.Shot(id=shotid)
+    pname = shot.getProject().getName()
+    if pname == 'willowstr':
+        pname = 'ds_willowStreet'
+    baseDir = os.path.join(baseDir, pname)
+    today = datetime.today()
+    day = str(today.day)
+    if len(day) == 1:
+        day = '0%s' % day
+    datefolder = '%s-%s-%s' % (today.year, today.month, day)
+    baseDir = os.path.join(baseDir, 'production\\approvals')
+    baseDir = os.path.join(baseDir, datefolder)
+    if not os.path.exists(baseDir):
+        os.mkdir(baseDir)
+    sq = shot.getSequence().getName()
+    task = ftrack.Task(taskid).getName()
+    ver = inBaseDir.split('\\')[-1]
+    filename = '%s_%s_%s_%s.mov' % (sq, shot.getName(), task, ver)
+    outputFile = os.path.join(baseDir, filename)
+    outputFile = outputFile.replace(' ', '_')
     return outputFile
 
 def getTaskPath(taskid):
@@ -168,23 +189,23 @@ def getAsset(filePath, assetName):
                                    assetType='ftrack_generic_type')
     return asset
 
-def createAttachment(version, name, outfile, framein, frameout):
+def createAttachment(version, name, outfile, framein, frameout, framerate):
     baseAttachmentUrl = '/attachment/getAttachment?attachmentid={0}'
     attachment = version.createAttachment(outfile)
     component = version.createComponent(name=name, path=baseAttachmentUrl.format(attachment.getId()))
     metadata = json.dumps({
         'frameIn' : framein,
         'frameOut' : frameout,
-        'frameRate' : 25
+        'frameRate' : framerate
     })
     component.setMeta(key='ftr_meta', value=metadata)
 
 
-def createAndPublishVersion(filePath, comment, asset, outfilemp4, outfilewebm, thumbnail, framein, frameout):
+def createAndPublishVersion(filePath, comment, asset, outfilemp4, outfilewebm, thumbnail, framein, frameout, framerate):
     task = getTask(filePath)
     version = asset.createVersion(comment=comment, taskid=task.getId())
-    createAttachment(version, 'ftrackreview-mp4', outfilemp4, framein, frameout)
-    createAttachment(version, 'ftrackreview-webm', outfilewebm, framein, frameout)
+    createAttachment(version, 'ftrackreview-mp4', outfilemp4, framein, frameout, framerate)
+    createAttachment(version, 'ftrackreview-webm', outfilewebm, framein, frameout, framerate)
     if os.path.exists(thumbnail):
         attachment = version.createAttachment(thumbnail)
         version.setThumbnail(attachment)

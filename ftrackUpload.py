@@ -208,6 +208,9 @@ class MovieUploadWidget(QtGui.QWidget):
         self.frameIn = framein
         self.frameOut = frameout
 
+    def setFrameRate(self, framerate):
+        self.framerate = framerate
+
     def setMoviePath(self, moviePath):
         self.movieLabel.setText(str(moviePath))
 
@@ -273,7 +276,7 @@ class MovieUploadWidget(QtGui.QWidget):
 
             ftrackUtils.createAndPublishVersion(taskPath, comment, asset,
                                                 outfilemp4, outfilewebm, thumnbail,
-                                                self.frameIn, self.frameOut)
+                                                self.frameIn, self.frameOut, self.framerate)
             ftrackUtils.setTaskStatus(taskPath, str(self.statusDrop.currentText()))
         self.deleteFiles(outfilemp4, outfilewebm, thumnbail)
 
