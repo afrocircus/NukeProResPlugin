@@ -80,6 +80,7 @@ class BrowserDialog(QtGui.QDialog):
                 self.projPath = tmpPath.split(' / ')[0]
                 for p in tmpPath.split(' / ')[1:-1]:
                     self.projPath = '%s / %s' % (self.projPath, p)
+                self.createTaskList(self.projPath)
 
     def taskItemClicked(self, item):
         pathtext = str(self.pathEdit.text())
@@ -94,23 +95,24 @@ class BrowserDialog(QtGui.QDialog):
 
     def createTaskList(self, projPath):
         self.childList = ftrackUtils.getAllChildren(projPath)
-        self.taskList.clear()
-        for type, name in self.childList:
-            if type == 'assetbuild':
-                icon = QtGui.QIcon()
-                icon.addPixmap(QtGui.QPixmap("%s\\PNG\\box.png" % iconPath))
-                item = QtGui.QListWidgetItem(icon, name)
-            elif type == 'task':
-                icon = QtGui.QIcon()
-                icon.addPixmap(QtGui.QPixmap("%s\\PNG\\signup.png" % iconPath))
-                item = QtGui.QListWidgetItem(icon, name)
-            elif type == 'sequence':
-                icon = QtGui.QIcon()
-                icon.addPixmap(QtGui.QPixmap("%s\\PNG\\movie.png" % iconPath))
-                item = QtGui.QListWidgetItem(icon, name)
-            else:
-                item = QtGui.QListWidgetItem(name)
-            self.taskList.addItem(item)
+        if not len(self.childList) == 0:
+            self.taskList.clear()
+            for type, name in self.childList:
+                if type == 'assetbuild':
+                    icon = QtGui.QIcon()
+                    icon.addPixmap(QtGui.QPixmap("%s\\PNG\\box.png" % iconPath))
+                    item = QtGui.QListWidgetItem(icon, name)
+                elif type == 'task':
+                    icon = QtGui.QIcon()
+                    icon.addPixmap(QtGui.QPixmap("%s\\PNG\\signup.png" % iconPath))
+                    item = QtGui.QListWidgetItem(icon, name)
+                elif type == 'sequence':
+                    icon = QtGui.QIcon()
+                    icon.addPixmap(QtGui.QPixmap("%s\\PNG\\movie.png" % iconPath))
+                    item = QtGui.QListWidgetItem(icon, name)
+                else:
+                    item = QtGui.QListWidgetItem(name)
+                self.taskList.addItem(item)
 
     def setTaskPath(self):
         self.winClosed.emit(self.getTaskPath())
@@ -194,6 +196,7 @@ class MovieUploadWidget(QtGui.QWidget):
         self.movieLabel.setMinimumWidth(100)
         self.movieLabel.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         frameLayout.addWidget(self.movieLabel)
+        self.framerate = '24'
 
         self.uploadButton = QtGui.QPushButton('Upload')
         self.uploadButton.setDisabled(True)
@@ -273,11 +276,10 @@ class MovieUploadWidget(QtGui.QWidget):
             if assetName == 'new':
                 assetName = str(self.assetEdit.text())
             asset = ftrackUtils.getAsset(taskPath, assetName)
-
-            ftrackUtils.createAndPublishVersion(taskPath, comment, asset,
+            version = ftrackUtils.createAndPublishVersion(taskPath, comment, asset,
                                                 outfilemp4, outfilewebm, thumnbail,
                                                 self.frameIn, self.frameOut, self.framerate)
-            ftrackUtils.setTaskStatus(taskPath, str(self.statusDrop.currentText()))
+            ftrackUtils.setTaskStatus(taskPath, version, str(self.statusDrop.currentText()))
         self.deleteFiles(outfilemp4, outfilewebm, thumnbail)
 
     def deleteFiles(self, outfilemp4, outfilewebm, thumbnail):
@@ -301,6 +303,7 @@ class MovieUploadWidget(QtGui.QWidget):
             return False
 
 '''def main():
+    import sys
     app = QtGui.QApplication(sys.argv)
     gui = MovieUploadWidget()
     gui.show()
